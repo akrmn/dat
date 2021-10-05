@@ -29,6 +29,10 @@ template FollowRequest with
       do
         create follows
 
-    choice DeclineFollowRequest: ()
+    nonconsuming choice DeclineFollowRequest: ()
       controller follows.followee
+      do exercise self WithdrawFollowRequest
+
+    choice WithdrawFollowRequest: ()
+      controller follows.follower
       do pure ()

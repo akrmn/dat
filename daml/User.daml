@@ -68,3 +68,9 @@ script = do
 
   -- Alice removes Bob from her followers
   submit alice $ exerciseCmd bobFollowsAlice RemoveFollower
+
+  -- Chuck requests to follow Bob, but Chuck withdraws his request before Bob accepts it
+  request4 <- submit chuck $ exerciseCmd chuckUser RequestToFollow with
+    userToFollow = bob
+
+  submit chuck $ exerciseCmd request4 WithdrawFollowRequest

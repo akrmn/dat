@@ -9,12 +9,13 @@ type Props = {
   parties: Party[];
   pendingParties: Party[];
   onAddParty: (party: Party) => Promise<boolean>;
+  onWithdrawRequest: (party: Party) => Promise<boolean>;
 }
 
 /**
  * React component to edit a list of `Party`s.
  */
-const PartyListEdit: React.FC<Props> = ({ parties, pendingParties, onAddParty }) => {
+const PartyListEdit: React.FC<Props> = ({ parties, pendingParties, onAddParty, onWithdrawRequest }) => {
   const [newParty, setNewParty] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -38,18 +39,23 @@ const PartyListEdit: React.FC<Props> = ({ parties, pendingParties, onAddParty })
   return (
     <List relaxed>
       {allParties.map(({ party, pending }) =>
-        <List.Item
-          key={party}
-        >
+        <List.Item key={party} >
           <List.Icon name='user outline' />
           <List.Content>
-            <List.Header className='test-select-following'>
-              {party}
-            </List.Header>
+            <List.Content floated='right'>
+              {pending &&
+                <>
+                  <List.Icon name='hourglass outline' />
+                  <List.Icon
+                    name='delete'
+                    link
+                    className='test-withdraw-follow-request'
+                    onClick={() => onWithdrawRequest(party)} />
+                </>
+              }
+            </List.Content>
+            <List.Header className='test-select-user-in-network'>{party}</List.Header>
           </List.Content>
-          {pending &&
-            <List.Icon name='hourglass outline' />
-          }
         </List.Item>
       )}
       <br />
