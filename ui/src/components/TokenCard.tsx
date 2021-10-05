@@ -2,6 +2,7 @@ import React from 'react'
 import { Card, Image, Dropdown, Button } from 'semantic-ui-react';
 import { Token } from '@daml.js/dat';
 import { useLedger, useParty } from '@daml/react';
+import { v4 as uuid } from "uuid";
 
 type Props = {
   token: Token.Token
@@ -12,8 +13,32 @@ type Props = {
  */
 const TokenCard: React.FC<Props> = ({ token }) => {
   const myself = useParty();
+  const [postIsSubmitting, setPostIsSubmitting] = React.useState(false);
   const [destroyIsSubmitting, setDestroyIsSubmitting] = React.useState(false);
   const ledger = useLedger();
+
+  const handlePost = async (event: React.FormEvent) => {
+    try {
+      setPostIsSubmitting(true);
+      await ledger.exerciseByKey(Token.Token.Token_SendPost, { author: token.author, id: token.id }, { postId: uuid() });
+    } catch (error) {
+      alert(`Error posting token:\n${JSON.stringify(error)}`);
+    } finally {
+      setPostIsSubmitting(false)
+    }
+  }
+
+  const postButton =
+    token.owner === myself &&
+    <Button
+      className='test-select-message-send-button'
+      type="submit"
+      disabled={postIsSubmitting}
+      loading={postIsSubmitting}
+      onClick={handlePost}
+    >
+      Post!
+    </Button>
 
   const handleDestroy = async (event: React.FormEvent) => {
     try {
@@ -44,8 +69,11 @@ const TokenCard: React.FC<Props> = ({ token }) => {
     <Button.Group
       attached="bottom"
       children={
-        destroyButton ?
-          [destroyButton]
+        postButton ?
+          destroyButton ?
+            [postButton, <Button.Or />, destroyButton]
+            :
+            [postButton]
           :
           []
       }

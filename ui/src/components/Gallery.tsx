@@ -30,8 +30,9 @@ const Gallery: React.FC<Props> = ({following}) => {
     [following, myself]);
 
   return (
-    <div>
+    <>
       <Dropdown
+        fluid
         selection
         placeholder="Select someone you follow"
         options={options}
@@ -42,7 +43,7 @@ const Gallery: React.FC<Props> = ({following}) => {
       <Card.Group relaxed>
         {tokens}
       </Card.Group>
-    </div>
+    </>
   );
 };
 

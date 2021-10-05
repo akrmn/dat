@@ -6,11 +6,12 @@ import { Container, Grid, Header, Icon, Segment, Divider } from 'semantic-ui-rea
 import { ContractId, Party } from '@daml/types';
 import { User, Follows } from '@daml.js/dat';
 import { useParty, useLedger, useStreamFetchByKeys, useStreamQueries } from '@daml/react';
-import UserList from './UserList';
-import PartyListEdit from './PartyListEdit';
-import TokenEdit from './TokenEdit';
-import Gallery from './Gallery';
 import FollowRequestList from './FollowRequestList';
+import Gallery from './Gallery';
+import PartyListEdit from './PartyListEdit';
+import PostList from './PostList';
+import TokenEdit from './TokenEdit';
+import UserList from './UserList';
 
 const MainView: React.FC = () => {
   const username = useParty();
@@ -121,7 +122,7 @@ const MainView: React.FC = () => {
       <Header as='h1' size='huge' color='blue' textAlign='center' style={{ padding: '1ex 0em 0ex 0em' }}>
         {myUser ? `Welcome, ${myUser.username}!` : 'Loading...'}
       </Header>
-      <Grid centered columns={2}>
+      <Grid centered columns={3}>
         <Grid.Row>
           <Grid.Column>
             <Segment>
@@ -170,6 +171,21 @@ const MainView: React.FC = () => {
                 requests={incomingFollowRequests}
                 onAccept={onAcceptFollowRequest}
                 onDecline={onDeclineFollowRequest}
+              />
+            </Segment>
+          </Grid.Column>
+          <Grid.Column>
+            <Segment>
+              <Header as='h2'>
+                <Icon name='list alternate' />
+                <Header.Content>
+                  Timeline
+                  <Header.Subheader>People you follow have posted these tokens...</Header.Subheader>
+                </Header.Content>
+              </Header>
+              <Divider />
+              <PostList
+                following={following}
               />
             </Segment>
           </Grid.Column>

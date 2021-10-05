@@ -155,4 +155,40 @@ script = do
 
   danaFollowsAlice <- submit alice $ exerciseCmd request6 AcceptFollowRequest
 
-  pure ()
+  -- Alice mints another token, and posts it.
+  token2 <- submit alice $ exerciseCmd aliceUser MintToken with
+    tokenId = "inc_tid"
+    title = "my second token"
+    content = "http://example.org/dog.png"
+    description = "dolor sit amet"
+
+  postContractId <- submit alice $ exerciseCmd token2 Token_SendPost with
+    postId = "pid"
+
+  Some postKey <- fmap key <$>
+    queryContractId @Post alice postContractId
+
+  -- Dana can see Alice's post
+  assertMsg "Dana should be able to see Alice's post" . isSome =<<
+    queryContractKey @Post dana postKey
+
+  -- Alice removes Dana from her followers
+  submit alice $ exerciseCmd danaFollowsAlice RemoveFollower
+
+  -- Dana can no longer see Alice's post
+  assertMsg "Dana should not be able to see Alice's post" . isNone =<<
+    queryContractKey @Post dana postKey
+
+  -- Bob cannot see Alice's post
+  assertMsg "Bob should not be able to see Alice's post" . isNone =<<
+    queryContractKey @Post bob postKey
+
+  -- Bob follows Alice
+  request7 <- submit bob $ exerciseCmd bobUser RequestToFollow with
+    userToFollow = alice
+
+  bobFollowsAlice <- submit alice $ exerciseCmd request7 AcceptFollowRequest
+
+  -- Bob can now see Alice's post
+  assertMsg "Bob should be able to see Alice's post" . isSome =<<
+    queryContractKey @Post bob postKey

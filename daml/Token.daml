@@ -46,15 +46,72 @@ template Token with
         create this with
           audience = Set.delete removedParty audience
 
+    choice Token_SendPost: ContractId Post with
+        postId: Text
+      controller owner
+      do
+        timestamp <- getTime
+
+        exerciseByKey @UserPrivate owner UserPrivate_RemoveToken with
+          removedTokenKey = key this
+
+        (_, userPrivate) <- fetchByKey @UserPrivate owner
+
+        post <- create
+          Post with
+            sender = owner
+            id = postId
+            audience = userPrivate.followers
+            token = this with
+              audience = Set.empty
+            timestamp
+
+        exerciseByKey @UserPrivate owner UserPrivate_AddPost with
+          newPostId = postId
+
+        pure post
+
 data TokenKey = TokenKey with
     author: Party
     id: Text
   deriving (Eq, Ord, Show)
 
+data PostKey = PostKey with
+    sender: Party
+    id: Text
+  deriving (Eq, Ord, Show)
+
+template Post with
+    sender: Party
+    id: Text
+    token: Token
+    timestamp: Time
+    audience: Set Party
+  where
+    signatory sender, token.author
+    observer audience
+    key PostKey sender id: PostKey
+    maintainer key.sender
+
+    choice Post_AddAudience: ContractId Post with
+        newParty: Party
+      controller sender
+      do
+        create this with
+          audience = Set.insert newParty audience
+
+    choice Post_RemoveAudience: ContractId Post with
+        removedParty: Party
+      controller sender
+      do
+        create this with
+          audience = Set.delete removedParty audience
+
 template UserPrivate with
     username: Party
     followers: Set Party
     tokenKeys: Set TokenKey
+    postIds: Set Text
   where
     signatory username
     observer followers
@@ -69,6 +126,10 @@ template UserPrivate with
           exerciseByKey @Token tokenKey Token_AddAudience with
             newParty = newFollower
 
+        forA_ postIds \postId ->
+          exerciseByKey @Post (PostKey username postId) Post_AddAudience with
+            newParty = newFollower
+
         create this with
           followers = Set.insert newFollower followers
 
@@ -78,6 +139,10 @@ template UserPrivate with
       do
         forA_ tokenKeys \tokenKey ->
           exerciseByKey @Token tokenKey Token_RemoveAudience with
+            removedParty = removedFollower
+
+        forA_ postIds \postId ->
+          exerciseByKey @Post (PostKey username postId) Post_RemoveAudience with
             removedParty = removedFollower
 
         create this with
@@ -97,6 +162,13 @@ template UserPrivate with
         create this with
           tokenKeys = Set.delete removedTokenKey tokenKeys
 
+    choice UserPrivate_AddPost: ContractId UserPrivate with
+        newPostId: Text
+      controller username
+      do
+        create this with
+          postIds = Set.insert newPostId postIds
+
 createUserPrivateIfMissing : Party -> Update (ContractId UserPrivate)
 createUserPrivateIfMissing username = do
   lookupByKey @UserPrivate username >>= \case
@@ -104,4 +176,5 @@ createUserPrivateIfMissing username = do
       username
       followers = Set.empty
       tokenKeys = Set.empty
+      postIds = Set.empty
     Some contractId -> pure contractId
