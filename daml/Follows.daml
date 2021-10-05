@@ -16,6 +16,11 @@ template Follows with
       do
         pure ()
 
+    nonconsuming choice Unfollow: ()
+      controller follower
+      do
+        exercise self RemoveFollower
+
 template FollowRequest with
     follows: Follows
   where

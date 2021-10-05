@@ -29,6 +29,16 @@ const MainView: React.FC = () => {
     }
   }
 
+  const unfollow = async (userToUnfollow: Party): Promise<boolean> => {
+    try {
+      await ledger.exerciseByKey(Follows.Follows.Unfollow, { follower: username, followee: userToUnfollow}, {});
+      return true;
+    } catch (error) {
+      alert(`Unknown error:\n${JSON.stringify(error)}`);
+      return false;
+    }
+  }
+
   const withdrawRequest = async (userToFollow: Party): Promise<boolean> => {
     try {
       await ledger.exerciseByKey(Follows.FollowRequest.WithdrawFollowRequest, { follower: username, followee: userToFollow}, {});
@@ -126,6 +136,7 @@ const MainView: React.FC = () => {
                 pendingParties={outgoingFollowRequests.map((r) => r.followee)}
                 onAddParty={follow}
                 onWithdrawRequest={withdrawRequest}
+                onUnfollow={unfollow}
               />
             </Segment>
             <Segment>

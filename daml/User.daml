@@ -74,3 +74,6 @@ script = do
     userToFollow = bob
 
   submit chuck $ exerciseCmd request4 WithdrawFollowRequest
+
+  -- Alice unfollows Bob
+  submit alice $ exerciseCmd aliceFollowsBob Unfollow

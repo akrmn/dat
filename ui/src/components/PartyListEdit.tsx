@@ -10,12 +10,13 @@ type Props = {
   pendingParties: Party[];
   onAddParty: (party: Party) => Promise<boolean>;
   onWithdrawRequest: (party: Party) => Promise<boolean>;
+  onUnfollow: (party: Party) => Promise<boolean>;
 }
 
 /**
  * React component to edit a list of `Party`s.
  */
-const PartyListEdit: React.FC<Props> = ({ parties, pendingParties, onAddParty, onWithdrawRequest }) => {
+const PartyListEdit: React.FC<Props> = ({ parties, pendingParties, onAddParty, onWithdrawRequest, onUnfollow }) => {
   const [newParty, setNewParty] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -43,7 +44,7 @@ const PartyListEdit: React.FC<Props> = ({ parties, pendingParties, onAddParty, o
           <List.Icon name='user outline' />
           <List.Content>
             <List.Content floated='right'>
-              {pending &&
+              {pending ?
                 <>
                   <List.Icon name='hourglass outline' />
                   <List.Icon
@@ -51,7 +52,13 @@ const PartyListEdit: React.FC<Props> = ({ parties, pendingParties, onAddParty, o
                     link
                     className='test-withdraw-follow-request'
                     onClick={() => onWithdrawRequest(party)} />
-                </>
+                </> :
+                <List.Icon
+                  name='delete'
+                  link
+                  className='test-unfollow-user'
+                  onClick={() => onUnfollow(party)}
+                />
               }
             </List.Content>
             <List.Header className='test-select-user-in-network'>{party}</List.Header>
