@@ -1,6 +1,10 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/digital-asset/daml/blob/main/LICENSE)
 
-# dat
+# dat (Digital Asset Tokens social network)
+
+This Daml application allows users to mint NFT-like "Tokens" and post them to their social network for their followers to take. Users have complete control over who follows them. The Daml code guarantees that a Token was authored by the `author` party (though no guarantees are made about the underlying URL :wink:).
+
+## Daml
 
 See [documentation] for details.
 
