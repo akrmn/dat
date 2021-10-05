@@ -29,6 +29,16 @@ const MainView: React.FC = () => {
     }
   }
 
+  const removeFollower = async (userToRemove: Party): Promise<boolean> => {
+    try {
+      await ledger.exerciseByKey(Follows.Follows.RemoveFollower, {followee: username, follower: userToRemove}, {});
+      return true;
+    } catch (error) {
+      alert(`Unknown error:\n${JSON.stringify(error)}`);
+      return false;
+    }
+  }
+
   const onAcceptFollowRequest = async (followRequestToAccept : ContractId<Follows.FollowRequest>): Promise<boolean> => {
     try {
       await ledger.exercise(Follows.FollowRequest.AcceptFollowRequest, followRequestToAccept, {})
@@ -120,6 +130,7 @@ const MainView: React.FC = () => {
                 users={followers}
                 following={following}
                 onFollow={follow}
+                onRemove={removeFollower}
               />
             </Segment>
             <Segment>

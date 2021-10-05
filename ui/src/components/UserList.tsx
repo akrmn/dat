@@ -9,13 +9,14 @@ type Props = {
   users: Party[];
   following: Party[];
   onFollow: (userToFollow: Party) => void;
+  onRemove: (userToFollow: Party) => void;
 }
 
 /**
  * React component to display a list of `User`s.
  * Every party in the list can be added as a friend.
  */
-const UserList: React.FC<Props> = ({users, following, onFollow}) => {
+const UserList: React.FC<Props> = ({users, following, onFollow, onRemove}) => {
   return (
     <List divided relaxed>
       {[...users].sort((x, y) => x.localeCompare(y)).map(user =>
@@ -23,6 +24,11 @@ const UserList: React.FC<Props> = ({users, following, onFollow}) => {
           <List.Icon name='user' />
           <List.Content>
             <List.Content floated='right'>
+            <Icon
+                name='delete'
+                link
+                className='test-remove-follower-icon'
+                onClick={() => onRemove(user)} />
               <Icon
                 name='add user'
                 link

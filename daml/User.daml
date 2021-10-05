@@ -65,3 +65,6 @@ script = do
     userToFollow = alice
 
   submit alice $ exerciseCmd request3 DeclineFollowRequest
+
+  -- Alice removes Bob from her followers
+  submit alice $ exerciseCmd bobFollowsAlice RemoveFollower

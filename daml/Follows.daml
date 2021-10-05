@@ -11,6 +11,11 @@ template Follows with
     key this: Follows
     maintainer key.follower
 
+    choice RemoveFollower: ()
+      controller followee
+      do
+        pure ()
+
 template FollowRequest with
     follows: Follows
   where
