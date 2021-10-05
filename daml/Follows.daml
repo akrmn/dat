@@ -3,6 +3,8 @@
 
 module Follows where
 
+import Token
+
 template Follows with
     follower: Party
     followee: Party
@@ -14,6 +16,8 @@ template Follows with
     choice RemoveFollower: ()
       controller followee
       do
+        exerciseByKey @UserPrivate followee UserPrivate_RemoveFollower with
+          removedFollower = follower
         pure ()
 
     nonconsuming choice Unfollow: ()
@@ -32,6 +36,11 @@ template FollowRequest with
     choice AcceptFollowRequest: ContractId Follows
       controller follows.followee
       do
+        createUserPrivateIfMissing follows.followee
+
+        exerciseByKey @UserPrivate follows.followee UserPrivate_AddFollower with
+          newFollower = follows.follower
+
         create follows
 
     nonconsuming choice DeclineFollowRequest: ()

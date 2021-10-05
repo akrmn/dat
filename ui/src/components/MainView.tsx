@@ -8,6 +8,8 @@ import { User, Follows } from '@daml.js/dat';
 import { useParty, useLedger, useStreamFetchByKeys, useStreamQueries } from '@daml/react';
 import UserList from './UserList';
 import PartyListEdit from './PartyListEdit';
+import TokenEdit from './TokenEdit';
+import Gallery from './Gallery';
 import FollowRequestList from './FollowRequestList';
 
 const MainView: React.FC = () => {
@@ -21,7 +23,7 @@ const MainView: React.FC = () => {
 
   const follow = async (userToFollow: Party): Promise<boolean> => {
     try {
-      await ledger.exerciseByKey(User.User.RequestToFollow, username, {userToFollow});
+      await ledger.exerciseByKey(User.User.RequestToFollow, username, { userToFollow });
       return true;
     } catch (error) {
       alert(`Unknown error:\n${JSON.stringify(error)}`);
@@ -31,7 +33,7 @@ const MainView: React.FC = () => {
 
   const unfollow = async (userToUnfollow: Party): Promise<boolean> => {
     try {
-      await ledger.exerciseByKey(Follows.Follows.Unfollow, { follower: username, followee: userToUnfollow}, {});
+      await ledger.exerciseByKey(Follows.Follows.Unfollow, { follower: username, followee: userToUnfollow }, {});
       return true;
     } catch (error) {
       alert(`Unknown error:\n${JSON.stringify(error)}`);
@@ -41,7 +43,7 @@ const MainView: React.FC = () => {
 
   const withdrawRequest = async (userToFollow: Party): Promise<boolean> => {
     try {
-      await ledger.exerciseByKey(Follows.FollowRequest.WithdrawFollowRequest, { follower: username, followee: userToFollow}, {});
+      await ledger.exerciseByKey(Follows.FollowRequest.WithdrawFollowRequest, { follower: username, followee: userToFollow }, {});
       return true;
     } catch (error) {
       alert(`Unknown error:\n${JSON.stringify(error)}`);
@@ -51,7 +53,7 @@ const MainView: React.FC = () => {
 
   const removeFollower = async (userToRemove: Party): Promise<boolean> => {
     try {
-      await ledger.exerciseByKey(Follows.Follows.RemoveFollower, {followee: username, follower: userToRemove}, {});
+      await ledger.exerciseByKey(Follows.Follows.RemoveFollower, { followee: username, follower: userToRemove }, {});
       return true;
     } catch (error) {
       alert(`Unknown error:\n${JSON.stringify(error)}`);
@@ -59,7 +61,7 @@ const MainView: React.FC = () => {
     }
   }
 
-  const onAcceptFollowRequest = async (followRequestToAccept : ContractId<Follows.FollowRequest>): Promise<boolean> => {
+  const onAcceptFollowRequest = async (followRequestToAccept: ContractId<Follows.FollowRequest>): Promise<boolean> => {
     try {
       await ledger.exercise(Follows.FollowRequest.AcceptFollowRequest, followRequestToAccept, {})
       return true;
@@ -69,7 +71,7 @@ const MainView: React.FC = () => {
     }
   }
 
-  const onDeclineFollowRequest = async (followRequestToDecline : ContractId<Follows.FollowRequest>): Promise<boolean> => {
+  const onDeclineFollowRequest = async (followRequestToDecline: ContractId<Follows.FollowRequest>): Promise<boolean> => {
     try {
       await ledger.exercise(Follows.FollowRequest.DeclineFollowRequest, followRequestToDecline, {})
       return true;
@@ -97,31 +99,31 @@ const MainView: React.FC = () => {
   const incomingFollowRequests = useMemo(() =>
     allFollowRequests
       .map(req => ({
-          requestId: req.contractId,
-          follower: req.payload.follows.follower,
-          followee: req.payload.follows.followee,
-        }))
+        requestId: req.contractId,
+        follower: req.payload.follows.follower,
+        followee: req.payload.follows.followee,
+      }))
       .filter(req => req.followee === username),
     [allFollowRequests, username]);
 
   const outgoingFollowRequests = useMemo(() =>
     allFollowRequests
       .map(req => ({
-          requestId: req.contractId,
-          follower: req.payload.follows.follower,
-          followee: req.payload.follows.followee,
-        }))
+        requestId: req.contractId,
+        follower: req.payload.follows.follower,
+        followee: req.payload.follows.followee,
+      }))
       .filter(req => req.follower === username),
     [allFollowRequests, username]);
 
   return (
     <Container>
+      <Header as='h1' size='huge' color='blue' textAlign='center' style={{ padding: '1ex 0em 0ex 0em' }}>
+        {myUser ? `Welcome, ${myUser.username}!` : 'Loading...'}
+      </Header>
       <Grid centered columns={2}>
-        <Grid.Row stretched>
+        <Grid.Row>
           <Grid.Column>
-            <Header as='h1' size='huge' color='blue' textAlign='center' style={{padding: '1ex 0em 0ex 0em'}}>
-                {myUser ? `Welcome, ${myUser.username}!` : 'Loading...'}
-            </Header>
             <Segment>
               <Header as='h2'>
                 <Icon name='user' />
@@ -168,6 +170,31 @@ const MainView: React.FC = () => {
                 requests={incomingFollowRequests}
                 onAccept={onAcceptFollowRequest}
                 onDecline={onDeclineFollowRequest}
+              />
+            </Segment>
+          </Grid.Column>
+          <Grid.Column >
+            <Segment>
+              <Header as='h2'>
+                <Icon name='leaf' />
+                <Header.Content>
+                  Mint
+                  <Header.Subheader>Create a token</Header.Subheader>
+                </Header.Content>
+              </Header>
+              <TokenEdit
+              />
+            </Segment>
+            <Segment>
+              <Header as='h2'>
+                <Icon name='images' />
+                <Header.Content>
+                  Gallery
+                  <Header.Subheader>See your and your friends' tokens</Header.Subheader>
+                </Header.Content>
+              </Header>
+              <Gallery
+                following={following}
               />
             </Segment>
           </Grid.Column>

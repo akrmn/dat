@@ -1,0 +1,92 @@
+-- Copyright (c) 2021 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
+-- SPDX-License-Identifier: Apache-2.0
+
+module Token where
+
+import DA.Foldable (forA_)
+import DA.Set (Set)
+import DA.Set qualified as Set
+
+template Token with
+    author: Party
+    authoredOn: Time
+    id: Text
+    owner: Party
+    ownerSince: Time
+    title: Text
+    content: Text
+    description: Text
+    audience: Set Party
+    ownerHistory: [(Party, Time)]
+  where
+    signatory author, owner
+    observer audience
+    key (TokenKey author id): TokenKey
+    maintainer key.author
+
+    choice Token_AddAudience: ContractId Token with
+        newParty: Party
+      controller owner
+      do
+        create this with
+          audience = Set.insert newParty audience
+
+    choice Token_RemoveAudience: ContractId Token with
+        removedParty: Party
+      controller owner
+      do
+        create this with
+          audience = Set.delete removedParty audience
+
+data TokenKey = TokenKey with
+    author: Party
+    id: Text
+  deriving (Eq, Ord, Show)
+
+template UserPrivate with
+    username: Party
+    followers: Set Party
+    tokenKeys: Set TokenKey
+  where
+    signatory username
+    observer followers
+    key username: Party
+    maintainer key
+
+    choice UserPrivate_AddFollower: ContractId UserPrivate with
+        newFollower: Party
+      controller username
+      do
+        forA_ tokenKeys \tokenKey ->
+          exerciseByKey @Token tokenKey Token_AddAudience with
+            newParty = newFollower
+
+        create this with
+          followers = Set.insert newFollower followers
+
+    choice UserPrivate_RemoveFollower: ContractId UserPrivate with
+        removedFollower: Party
+      controller username
+      do
+        forA_ tokenKeys \tokenKey ->
+          exerciseByKey @Token tokenKey Token_RemoveAudience with
+            removedParty = removedFollower
+
+        create this with
+          followers = Set.delete removedFollower followers
+
+    choice UserPrivate_AddToken: ContractId UserPrivate with
+        newTokenKey: TokenKey
+      controller username
+      do
+        create this with
+          tokenKeys = Set.insert newTokenKey tokenKeys
+
+createUserPrivateIfMissing : Party -> Update (ContractId UserPrivate)
+createUserPrivateIfMissing username = do
+  lookupByKey @UserPrivate username >>= \case
+    None -> create UserPrivate with
+      username
+      followers = Set.empty
+      tokenKeys = Set.empty
+    Some contractId -> pure contractId

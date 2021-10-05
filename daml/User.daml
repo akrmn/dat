@@ -3,9 +3,10 @@
 
 module User where
 
-import DA.Optional (isNone)
+import DA.Optional (isNone, isSome)
 
 import Follows
+import Token
 
 import Daml.Script
 
@@ -37,6 +38,33 @@ template User with
 
         create FollowRequest with follows
 
+    nonconsuming choice MintToken: ContractId Token with
+        tokenId: Text
+        title: Text
+        content: Text
+        description: Text
+      controller username
+      do
+        createUserPrivateIfMissing username
+        (_, UserPrivate { followers }) <- fetchByKey @UserPrivate username
+        authoredOn <- getTime
+        let
+          token = Token with
+            author = username
+            authoredOn
+            id = tokenId
+            owner = username
+            ownerSince = authoredOn
+            title
+            content
+            description
+            audience = followers
+            ownerHistory = [(username, authoredOn)]
+        cToken <- create token
+        exerciseByKey @UserPrivate username UserPrivate_AddToken with
+          newTokenKey = key token
+        pure cToken
+
 script : Script ()
 script = do
   -- Allocate parties Alice, Bob and Chuck
@@ -66,8 +94,26 @@ script = do
 
   submit alice $ exerciseCmd request3 DeclineFollowRequest
 
+  -- Alice mints a token
+  token1ContractId <- submit alice $ exerciseCmd aliceUser MintToken with
+    tokenId = "tid"
+    title = "my first token"
+    content = "http://example.org/cat.png"
+    description = "lorem ipsum"
+
+  Some token1Key <- fmap key <$>
+    queryContractId @Token alice token1ContractId
+
+  -- Bob can see Alice's token
+  assertMsg "Bob should be able to see Alice's token" . isSome =<<
+    queryContractKey @Token bob token1Key
+
   -- Alice removes Bob from her followers
   submit alice $ exerciseCmd bobFollowsAlice RemoveFollower
+
+  -- Bob can no longer see Alice's token
+  assertMsg "Bob should not be able to see Alice's token" . isNone =<<
+    queryContractKey @Token bob token1Key
 
   -- Chuck requests to follow Bob, but Chuck withdraws his request before Bob accepts it
   request4 <- submit chuck $ exerciseCmd chuckUser RequestToFollow with
@@ -77,3 +123,17 @@ script = do
 
   -- Alice unfollows Bob
   submit alice $ exerciseCmd aliceFollowsBob Unfollow
+
+  -- Chuck cannot see Alice's token
+  assertMsg "Chuck should not be able to see Alice's token" . isNone =<<
+    queryContractKey @Token chuck token1Key
+
+  -- Chuck follows Alice
+  request5 <- submit chuck $ exerciseCmd chuckUser RequestToFollow with
+    userToFollow = alice
+
+  chuckFollowsAlice <- submit alice $ exerciseCmd request5 AcceptFollowRequest
+
+  -- Chuck can now see Alice's token
+  assertMsg "Chuck should be able to see Alice's token" . isSome =<<
+    queryContractKey @Token chuck token1Key
