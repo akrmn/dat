@@ -66,7 +66,6 @@ const LoginScreen: React.FC<Props> = ({onLogin}) => {
                    token: auth.makeToken(username)});
     }
     return wrap(<>
-      {/* FORM_BEGIN */}
       <Form.Input fluid
                   icon='user'
                   iconPosition='left'
@@ -80,7 +79,6 @@ const LoginScreen: React.FC<Props> = ({onLogin}) => {
               onClick={handleLogin}>
         Log in
       </Button>
-      {/* FORM_END */}
     </>);
   };
 

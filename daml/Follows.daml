@@ -1,0 +1,29 @@
+-- Copyright (c) 2021 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
+-- SPDX-License-Identifier: Apache-2.0
+
+module Follows where
+
+template Follows with
+    follower: Party
+    followee: Party
+  where
+    signatory follower, followee
+    key this: Follows
+    maintainer key.follower
+
+template FollowRequest with
+    follows: Follows
+  where
+    signatory follows.follower
+    observer follows.followee
+    key follows: Follows
+    maintainer key.follower
+
+    choice AcceptFollowRequest: ContractId Follows
+      controller follows.followee
+      do
+        create follows
+
+    choice DeclineFollowRequest: ()
+      controller follows.followee
+      do pure ()

@@ -3,21 +3,65 @@
 
 module User where
 
+import DA.Optional (isNone)
+
+import Follows
+
+import Daml.Script
+
 template User with
     username: Party
-    following: [Party]
   where
     signatory username
-    observer following
 
     key username: Party
     maintainer key
 
-    nonconsuming choice Follow: ContractId User with
+    nonconsuming choice RequestToFollow: ContractId FollowRequest with
         userToFollow: Party
       controller username
       do
-        assertMsg "You cannot follow yourself" (userToFollow /= username)
-        assertMsg "You cannot follow the same user twice" (userToFollow `notElem` following)
-        archive self
-        create this with following = userToFollow :: following
+        let
+          follows = Follows with
+            follower = username
+            followee = userToFollow
+
+        assertMsg "You cannot follow yourself"
+          $ userToFollow /= username
+
+        assertMsg ("You already follow " <> partyToText userToFollow )
+          . isNone =<< lookupByKey @Follows follows
+
+        assertMsg ("You already requested to follow " <> partyToText userToFollow )
+          . isNone =<< lookupByKey @FollowRequest follows
+
+        create FollowRequest with follows
+
+script : Script ()
+script = do
+  -- Allocate parties Alice, Bob and Chuck
+  alice <- allocateParty "Alice"
+  aliceUser <- submit alice $ createCmd User with username = alice
+
+  bob <- allocateParty "Bob"
+  bobUser <- submit bob $ createCmd User with username = bob
+
+  chuck <- allocateParty "Chuck"
+  chuckUser <- submit chuck $ createCmd User with username = chuck
+
+  -- Alice and Bob follow each other
+  request <- submit bob $ exerciseCmd bobUser RequestToFollow with
+    userToFollow = alice
+
+  bobFollowsAlice <- submit alice $ exerciseCmd request AcceptFollowRequest
+
+  request2 <- submit alice $ exerciseCmd aliceUser RequestToFollow with
+    userToFollow = bob
+
+  aliceFollowsBob <- submit bob $ exerciseCmd request2 AcceptFollowRequest
+
+  -- Chuck requests to follow Alice, but she declines
+  request3 <- submit chuck $ exerciseCmd chuckUser RequestToFollow with
+    userToFollow = alice
+
+  submit alice $ exerciseCmd request3 DeclineFollowRequest

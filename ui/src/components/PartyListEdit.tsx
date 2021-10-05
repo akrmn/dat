@@ -7,13 +7,14 @@ import { Party } from '@daml/types';
 
 type Props = {
   parties: Party[];
+  pendingParties: Party[];
   onAddParty: (party: Party) => Promise<boolean>;
 }
 
 /**
  * React component to edit a list of `Party`s.
  */
-const PartyListEdit: React.FC<Props> = ({parties, onAddParty}) => {
+const PartyListEdit: React.FC<Props> = ({ parties, pendingParties, onAddParty }) => {
   const [newParty, setNewParty] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -29,9 +30,14 @@ const PartyListEdit: React.FC<Props> = ({parties, onAddParty}) => {
     }
   }
 
+  const allParties =
+    parties.map((p) => ({ party: p, pending: false })).concat(
+      pendingParties.map((p) => ({ party: p, pending: true }))
+    ).sort((x, y) => x.party.localeCompare(y.party))
+
   return (
     <List relaxed>
-      {[...parties].sort((x, y) => x.localeCompare(y)).map((party) =>
+      {allParties.map(({ party, pending }) =>
         <List.Item
           key={party}
         >
@@ -41,6 +47,9 @@ const PartyListEdit: React.FC<Props> = ({parties, onAddParty}) => {
               {party}
             </List.Header>
           </List.Content>
+          {pending &&
+            <List.Icon name='hourglass outline' />
+          }
         </List.Item>
       )}
       <br />
@@ -57,7 +66,7 @@ const PartyListEdit: React.FC<Props> = ({parties, onAddParty}) => {
         <Button
           type='submit'
           className='test-select-follow-button'>
-          Follow
+          Request to Follow
         </Button>
       </Form>
     </List>
