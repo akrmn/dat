@@ -162,6 +162,9 @@ script = do
     content = "http://example.org/dog.png"
     description = "dolor sit amet"
 
+  Some token2Key <- fmap key <$>
+    queryContractId @Token alice token2
+
   postContractId <- submit alice $ exerciseCmd token2 Token_SendPost with
     postId = "pid"
 
@@ -192,3 +195,21 @@ script = do
   -- Bob can now see Alice's post
   assertMsg "Bob should be able to see Alice's post" . isSome =<<
     queryContractKey @Post bob postKey
+
+  -- Bob takes Alice's token from her post
+  submit bob $ exerciseByKeyCmd @Post postKey Post_TakeToken with
+    newOwner = bob
+
+  -- Dana cannot see Bob's Alice-authored token
+  assertMsg "Dana should not be able to see Bob's Alice-authored token" . isNone =<<
+    queryContractKey @Token dana token2Key
+
+  -- Dana follows Bob
+  request8 <- submit dana $ exerciseCmd danaUser RequestToFollow with
+    userToFollow = bob
+
+  bobFollowsDana <- submit bob $ exerciseCmd request8 AcceptFollowRequest
+
+  -- -- Dana can now see Bob's Alice-authored token
+  assertMsg "Dana should be able to see Bob's Alice-authored token" . isSome =<<
+    queryContractKey @Token dana token2Key

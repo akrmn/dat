@@ -1,6 +1,7 @@
 import React from 'react'
-import { Card, Icon, Image, Dropdown } from 'semantic-ui-react';
+import { Card, Icon, Image, Dropdown, Button } from 'semantic-ui-react';
 import { Token } from '@daml.js/dat';
+import { useLedger, useParty } from '@daml/react';
 
 type Props = {
   post: Token.Post
@@ -10,6 +11,19 @@ type Props = {
  * React component displaying a post.
  */
 const PostCard: React.FC<Props> = ({ post }) => {
+  const myself = useParty();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const ledger = useLedger();
+  const handleTake = async (event: React.FormEvent) => {
+    try {
+      setIsSubmitting(true);
+      await ledger.exerciseByKey(Token.Post.Post_TakeToken, { sender: post.sender, id: post.id }, { newOwner: myself });
+    } catch (error) {
+      alert(`Error taking token:\n${JSON.stringify(error)}`);
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
   return (
     <Card fluid>
       <Card.Content extra>
@@ -46,6 +60,16 @@ const PostCard: React.FC<Props> = ({ post }) => {
           </Dropdown>
         </Card.Description>
       </Card.Content>
+      <Button.Group attached="bottom">
+        <Button
+          className='test-select-message-send-button'
+          type="submit"
+          disabled={isSubmitting}
+          loading={isSubmitting}
+          onClick={handleTake}
+          content="Take!"
+        />
+      </Button.Group>
     </Card>
   );
 }

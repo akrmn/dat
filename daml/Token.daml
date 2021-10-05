@@ -107,6 +107,28 @@ template Post with
         create this with
           audience = Set.delete removedParty audience
 
+    choice Post_TakeToken: ContractId Token with
+        newOwner: Party
+      controller newOwner
+      do
+        exerciseByKey @UserPrivate sender UserPrivate_RemovePost with
+          removedPostId = id
+
+        createUserPrivateIfMissing newOwner
+
+        exerciseByKey @UserPrivate newOwner UserPrivate_AddToken with
+          newTokenKey = key token
+
+        (_, UserPrivate { followers }) <- fetchByKey @UserPrivate newOwner
+
+        now <- getTime
+
+        create token with
+          owner = newOwner
+          ownerSince = now
+          audience = followers
+          ownerHistory = (newOwner, now) :: ownerHistory token
+
 template UserPrivate with
     username: Party
     followers: Set Party
@@ -168,6 +190,13 @@ template UserPrivate with
       do
         create this with
           postIds = Set.insert newPostId postIds
+
+    choice UserPrivate_RemovePost: ContractId UserPrivate with
+        removedPostId: Text
+      controller username
+      do
+        create this with
+          postIds = Set.delete removedPostId postIds
 
 createUserPrivateIfMissing : Party -> Update (ContractId UserPrivate)
 createUserPrivateIfMissing username = do
