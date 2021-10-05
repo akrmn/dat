@@ -1,6 +1,7 @@
 import React from 'react'
-import { Card, Image, Dropdown } from 'semantic-ui-react';
+import { Card, Image, Dropdown, Button } from 'semantic-ui-react';
 import { Token } from '@daml.js/dat';
+import { useLedger, useParty } from '@daml/react';
 
 type Props = {
   token: Token.Token
@@ -10,6 +11,46 @@ type Props = {
  * React component displaying a token.
  */
 const TokenCard: React.FC<Props> = ({ token }) => {
+  const myself = useParty();
+  const [destroyIsSubmitting, setDestroyIsSubmitting] = React.useState(false);
+  const ledger = useLedger();
+
+  const handleDestroy = async (event: React.FormEvent) => {
+    try {
+      setDestroyIsSubmitting(true);
+      await ledger.exerciseByKey(Token.Token.Token_Destroy, { author: token.author, id: token.id }, {});
+    } catch (error) {
+      alert(`Error destroying token:\n${JSON.stringify(error)}`);
+    } finally {
+      setDestroyIsSubmitting(false)
+    }
+  }
+
+  const destroyButton =
+    token.owner === myself &&
+    token.owner === token.author &&
+    <Button
+      negative
+      className='test-select-message-send-button'
+      type="submit"
+      disabled={destroyIsSubmitting}
+      loading={destroyIsSubmitting}
+      onClick={handleDestroy}
+    >
+      Destroy!
+    </Button>
+
+  const buttons =
+    <Button.Group
+      attached="bottom"
+      children={
+        destroyButton ?
+          [destroyButton]
+          :
+          []
+      }
+    />
+
   return (
     <Card fluid>
       <Image src={token.content} wrapped ui={false} />
@@ -35,6 +76,7 @@ const TokenCard: React.FC<Props> = ({ token }) => {
           </Dropdown>
         </Card.Description>
       </Card.Content>
+      {buttons}
     </Card>
   );
 }

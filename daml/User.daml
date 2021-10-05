@@ -67,7 +67,7 @@ template User with
 
 script : Script ()
 script = do
-  -- Allocate parties Alice, Bob and Chuck
+  -- Allocate parties Alice, Bob, Chuck and Dana
   alice <- allocateParty "Alice"
   aliceUser <- submit alice $ createCmd User with username = alice
 
@@ -76,6 +76,9 @@ script = do
 
   chuck <- allocateParty "Chuck"
   chuckUser <- submit chuck $ createCmd User with username = chuck
+
+  dana <- allocateParty "Dana"
+  danaUser <- submit dana $ createCmd User with username = dana
 
   -- Alice and Bob follow each other
   request <- submit bob $ exerciseCmd bobUser RequestToFollow with
@@ -137,3 +140,19 @@ script = do
   -- Chuck can now see Alice's token
   assertMsg "Chuck should be able to see Alice's token" . isSome =<<
     queryContractKey @Token chuck token1Key
+
+  -- Alice destroys her token
+  submit alice $ exerciseByKeyCmd @Token token1Key Token_Destroy
+
+  -- Alice cannot see her destroyed token
+  assertMsg "Alice should not be able to see her destroyed token" . isNone =<<
+    queryContractKey @Token alice token1Key
+
+  -- Dana follows Alice
+  -- -- This checks that Alice's UserPrivate contract is in a consistent state.
+  request6 <- submit dana $ exerciseCmd danaUser RequestToFollow with
+    userToFollow = alice
+
+  danaFollowsAlice <- submit alice $ exerciseCmd request6 AcceptFollowRequest
+
+  pure ()

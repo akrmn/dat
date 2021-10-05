@@ -3,6 +3,7 @@
 
 module Token where
 
+import DA.Assert ((===))
 import DA.Foldable (forA_)
 import DA.Set (Set)
 import DA.Set qualified as Set
@@ -23,6 +24,13 @@ template Token with
     observer audience
     key (TokenKey author id): TokenKey
     maintainer key.author
+
+    choice Token_Destroy: () with
+      controller owner
+      do
+        exerciseByKey @UserPrivate owner UserPrivate_RemoveToken with
+          removedTokenKey = key this
+        owner === author
 
     choice Token_AddAudience: ContractId Token with
         newParty: Party
@@ -81,6 +89,13 @@ template UserPrivate with
       do
         create this with
           tokenKeys = Set.insert newTokenKey tokenKeys
+
+    choice UserPrivate_RemoveToken: ContractId UserPrivate with
+        removedTokenKey: TokenKey
+      controller username
+      do
+        create this with
+          tokenKeys = Set.delete removedTokenKey tokenKeys
 
 createUserPrivateIfMissing : Party -> Update (ContractId UserPrivate)
 createUserPrivateIfMissing username = do
